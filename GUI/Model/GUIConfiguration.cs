@@ -78,6 +78,14 @@ namespace CKAN.GUI
         public int ActiveFilter = 0;
 
         /// <summary>
+        /// How the mod list is presented: expanded rows, cards, or the
+        /// original table. Matches <see cref="ModListViewMode"/>.
+        /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
+        [DefaultValue(0)]
+        public int ModListViewMode = 0;
+
+        /// <summary>
         /// Name of the tag filter the user chose, if any
         /// </summary>
         public string? TagFilter = null;

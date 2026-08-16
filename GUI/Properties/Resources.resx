@@ -454,6 +454,10 @@ Click Refresh to update!
 Or choose "Update repositories on launch" in the settings.</value></data>
   <data name="TotalPlayTime" xml:space="preserve"><value>Total play time: {0} hours</value></data>
   <data name="ChangeTypeNone" xml:space="preserve"><value>None</value></data>
+  <data name="ManageModsViewMode" xml:space="preserve"><value>View</value></data>
+  <data name="ManageModsViewExpanded" xml:space="preserve"><value>Expanded list</value></data>
+  <data name="ManageModsViewCards" xml:space="preserve"><value>Cards</value></data>
+  <data name="ManageModsViewClassic" xml:space="preserve"><value>Classic list</value></data>
   <data name="ChangeTypeInstall" xml:space="preserve"><value>Install</value></data>
   <data name="ChangeTypeRemove" xml:space="preserve"><value>Remove</value></data>
   <data name="ChangeTypeUpdate" xml:space="preserve"><value>Update</value></data>

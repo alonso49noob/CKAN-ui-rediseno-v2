@@ -39,7 +39,7 @@ namespace CKAN.GUI
         /// starts a download and repaints the grid once it lands, so callers
         /// just draw nothing this time round.
         /// </summary>
-        public static Bitmap? Get(GUIMod mod, DataGridView grid)
+        public static Bitmap? Get(GUIMod mod, Control repaintOnArrival)
         {
             var identifier = mod.Identifier;
             if (cache.TryGetValue(identifier, out var cached))
@@ -52,11 +52,11 @@ namespace CKAN.GUI
                 cache[identifier] = null;
                 return null;
             }
-            Fetch(identifier, url, grid);
+            Fetch(identifier, url, repaintOnArrival);
             return null;
         }
 
-        private static void Fetch(string identifier, Uri url, DataGridView grid)
+        private static void Fetch(string identifier, Uri url, Control grid)
         {
             if (!inFlight.TryAdd(identifier, true))
             {
@@ -155,7 +155,7 @@ namespace CKAN.GUI
         /// Repaint at most a few times a second: a screenful of thumbnails
         /// arriving at once would otherwise queue up a repaint for each.
         /// </summary>
-        private static void Repaint(DataGridView grid)
+        private static void Repaint(Control grid)
         {
             if (Interlocked.Exchange(ref repaintPending, 1) == 1)
             {

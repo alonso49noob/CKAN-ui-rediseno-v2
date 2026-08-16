@@ -35,6 +35,7 @@ namespace CKAN.GUI
                 ModGrid.BorderStyle = BorderStyle.None;
             }
             ModCardRows.Attach(ModGrid);
+            SetUpCardsView();
             uninstallingStyle = new DataGridViewCellStyle()
             {
                 Font = new Font(ModGrid.Font, FontStyle.Strikeout),
@@ -1238,6 +1239,125 @@ namespace CKAN.GUI
                     currentInstance, RegistryManager.Instance(currentInstance, repoData).registry);
             }
         }
+
+        #region Card and expanded list views
+
+        /// <summary>
+        /// Adds the row and card views over the grid. The grid stays where it is
+        /// and keeps doing the work -- filtering, sorting, the change set -- and
+        /// is simply covered up while another view is showing, so nothing has to
+        /// be kept in step by hand.
+        /// </summary>
+        private void SetUpCardsView()
+        {
+            ModCards = new ModCardsView()
+            {
+                Dock    = DockStyle.Fill,
+                Grid    = ModGrid,
+                Visible = false,
+            };
+            Controls.Add(ModCards);
+            ModCards.ModClicked           += SelectModFromCards;
+            ModCards.InstallToggled       += ToggleInstallFromCards;
+            ModCards.ContextMenuRequested += () => ShowModContextMenu();
+
+            ViewModeMenu = new ToolStripMenuItem(Properties.Resources.ManageModsViewMode);
+            foreach (var (label, viewMode) in new[]
+                     {
+                         (Properties.Resources.ManageModsViewExpanded, ModListViewMode.ExpandedList),
+                         (Properties.Resources.ManageModsViewCards,    ModListViewMode.Cards),
+                         (Properties.Resources.ManageModsViewClassic,  ModListViewMode.ClassicList),
+                     })
+            {
+                var item = new ToolStripMenuItem(label) { Tag = viewMode };
+                item.Click += (_, _) => ViewMode = viewMode;
+                ViewModeMenu.DropDownItems.Add(item);
+            }
+            Toolbar.Items.Add(ViewModeMenu);
+
+            ViewMode = guiConfig?.ModListViewMode is int saved
+                       && Enum.IsDefined(typeof(ModListViewMode), saved)
+                           ? (ModListViewMode)saved
+                           : ModListViewMode.ExpandedList;
+        }
+
+        private ModListViewMode viewMode = ModListViewMode.ExpandedList;
+
+        private ModListViewMode ViewMode
+        {
+            get => viewMode;
+            set
+            {
+                viewMode = value;
+                if (ModCards != null)
+                {
+                    ModCards.Mode    = value;
+                    ModCards.Visible = value != ModListViewMode.ClassicList;
+                    if (ModCards.Visible)
+                    {
+                        ModCards.BringToFront();
+                    }
+                    ModCards.Invalidate();
+                }
+                if (ViewModeMenu != null)
+                {
+                    foreach (var item in ViewModeMenu.DropDownItems.OfType<ToolStripMenuItem>())
+                    {
+                        item.Checked = item.Tag is ModListViewMode m && m == value;
+                    }
+                }
+                if (guiConfig != null)
+                {
+                    guiConfig.ModListViewMode = (int)value;
+                }
+            }
+        }
+
+        private DataGridViewRow? RowFor(GUIMod mod)
+            => ModGrid.Rows.Cast<DataGridViewRow>()
+                           .FirstOrDefault(row => ReferenceEquals(row.Tag, mod));
+
+        /// <summary>
+        /// Route a click in the card view through the grid's own selection, so
+        /// the info panel and everything else react as if the row was clicked.
+        /// </summary>
+        private void SelectModFromCards(GUIMod mod)
+        {
+            if (RowFor(mod) is DataGridViewRow row)
+            {
+                ModGrid.CurrentCell = row.Cells[SelectableColumnIndex()];
+            }
+        }
+
+        /// <summary>
+        /// Mark a mod for install or removal, the same way ticking the Installed
+        /// checkbox does, so the change set and conflicts stay consistent.
+        /// </summary>
+        private void ToggleInstallFromCards(GUIMod mod)
+        {
+            if (mod.IsAutodetected || currentInstance == null)
+            {
+                return;
+            }
+            var install = mod.SelectedMod == null;
+            mod.SelectedMod = install
+                                  ? mod.SelectedMod
+                                    ?? mod.InstalledMod?.Module
+                                    ?? mod.LatestCompatibleMod
+                                  : null;
+            if (RowFor(mod)?.Cells[Installed.Index] is DataGridViewCheckBoxCell cell)
+            {
+                cell.Value = mod.SelectedMod != null;
+            }
+            UpdateChangeSetAndConflicts(
+                currentInstance, RegistryManager.Instance(currentInstance, repoData).registry);
+            ModCards?.Invalidate();
+        }
+
+        private ModCardsView?     ModCards;
+        private ToolStripMenuItem? ViewModeMenu;
+
+        #endregion
 
         private void ModGrid_GotFocus(object? sender, EventArgs? e)
         {
