@@ -59,7 +59,7 @@ namespace CKAN.GUI
             };
         }
 
-        private const string nameColumn = "Name";
+        private const string nameColumn = "ModName";
 
         private const int iconMargin = 4;
 
