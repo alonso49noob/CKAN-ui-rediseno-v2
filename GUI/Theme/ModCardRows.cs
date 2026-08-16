@@ -38,8 +38,33 @@ namespace CKAN.GUI
                                                         padding.Top    + rowPadding,
                                                         padding.Right,
                                                         padding.Bottom + rowPadding);
-            grid.Disposed += (_, _) => attached.Remove(grid);
+
+            // Indent the name so the thumbnail has somewhere to sit. Padding is
+            // what reserves it; the icon is drawn into that gap when painting.
+            if (grid.Columns[nameColumn] is DataGridViewColumn column)
+            {
+                nameColumnIndex[grid] = column.Index;
+                var namePadding = column.DefaultCellStyle.Padding;
+                column.DefaultCellStyle.Padding =
+                    new Padding(namePadding.Left + ModIcons.Size + (2 * iconMargin),
+                                namePadding.Top,
+                                namePadding.Right,
+                                namePadding.Bottom);
+            }
+
+            grid.Disposed += (_, _) =>
+            {
+                attached.Remove(grid);
+                nameColumnIndex.Remove(grid);
+            };
         }
+
+        private const string nameColumn = "Name";
+
+        private const int iconMargin = 4;
+
+        private static readonly Dictionary<DataGridView, int> nameColumnIndex =
+            new Dictionary<DataGridView, int>();
 
         /// <summary>Extra space above and below the content of every cell</summary>
         private const int rowPadding = 5;
@@ -109,9 +134,41 @@ namespace CKAN.GUI
                 }
             }
 
+            DrawIcon(g, grid, e.RowIndex, e.ColumnIndex, card);
+
             // Let the cell draw its own text, checkbox or image on top
             e.PaintContent(e.CellBounds);
             e.Handled = true;
+        }
+
+        /// <summary>
+        /// Draws the mod's thumbnail into the gap reserved by the name column's
+        /// padding. Does nothing until the image has been fetched, at which
+        /// point the grid repaints and it appears.
+        /// </summary>
+        private static void DrawIcon(Graphics g, DataGridView grid,
+                                     int rowIndex, int columnIndex, Rectangle card)
+        {
+            if (!nameColumnIndex.TryGetValue(grid, out var index)
+                || columnIndex != index
+                || grid.Rows[rowIndex].Tag is not GUIMod mod
+                || ModIcons.Get(mod, grid) is not Bitmap icon
+                || card.Height < ModIcons.Size)
+            {
+                return;
+            }
+            var box = new Rectangle(card.Left + iconMargin,
+                                    card.Top + ((card.Height - ModIcons.Size) / 2),
+                                    ModIcons.Size, ModIcons.Size);
+            var saved = g.Clip;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var rounded = CardPath(box, true, true))
+            {
+                g.SetClip(rounded);
+                g.DrawImage(icon, box);
+            }
+            g.Clip = saved;
+            g.SmoothingMode = SmoothingMode.Default;
         }
 
         /// <summary>

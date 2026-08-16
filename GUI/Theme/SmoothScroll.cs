@@ -47,7 +47,7 @@ namespace CKAN.GUI
         /// Rows travelled per wheel notch. One row keeps each step as small as
         /// the control allows, which is as close to continuous as it gets.
         /// </summary>
-        private const int rowsPerNotch = 2;
+        private const int rowsPerNotch = 1;
 
         /// <summary>One row per frame, so the speed doesn't taper off</summary>
         private const int rowsPerFrame = 1;

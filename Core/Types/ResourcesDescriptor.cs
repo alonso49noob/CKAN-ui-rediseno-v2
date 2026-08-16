@@ -62,5 +62,15 @@ namespace CKAN
 
         [JsonProperty("epicstore", Order = 15, NullValueHandling = NullValueHandling.Ignore)]
         public Uri? epicstore;
+
+        /// <summary>
+        /// Image of the mod, normally an in-game screenshot, as indexed from
+        /// SpaceDock. Declared here so it survives the round trip: the repository
+        /// file on disk is written back out by whichever build refreshed it, and
+        /// anything without a field to land in is dropped on the way through.
+        /// </summary>
+        [JsonProperty("x_screenshot", Order = 16, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(JsonIgnoreBadUrlConverter))]
+        public Uri? xScreenshot;
     }
 }
