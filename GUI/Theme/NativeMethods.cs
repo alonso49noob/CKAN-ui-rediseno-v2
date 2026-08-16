@@ -87,6 +87,17 @@ namespace CKAN.GUI
         internal const int WM_PAINT      = 0x000F;
         internal const int WM_ERASEBKGND = 0x0014;
 
+        // A scrollbar control redraws itself straight away when its position or
+        // range changes, without waiting for WM_PAINT. Both messages carry a
+        // "redraw" flag that can be cleared to stop it.
+
+        /// <summary>Position changed; lParam is the redraw flag</summary>
+        internal const int SBM_SETPOS         = 0x00E0;
+        /// <summary>Range changed, redrawing</summary>
+        internal const int SBM_SETRANGEREDRAW = 0x00E6;
+        /// <summary>Whole scroll info changed; wParam is the redraw flag</summary>
+        internal const int SBM_SETSCROLLINFO  = 0x00E9;
+
         [DllImport("user32.dll")]
         internal static extern bool GetScrollInfo(IntPtr hWnd, int fnBar, ref SCROLLINFO si);
 

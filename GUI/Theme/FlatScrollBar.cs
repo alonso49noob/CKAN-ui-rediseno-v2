@@ -88,8 +88,47 @@ namespace CKAN.GUI
                             return;
                         }
                         break;
+
+                    // Scrolling changes the position or the range, and the
+                    // control answers by redrawing itself there and then in
+                    // system colors -- the white flash. Clear the redraw flag
+                    // these messages carry and ask for a proper repaint, so the
+                    // only thing that ever draws is our own WM_PAINT.
+                    case NativeMethods.SBM_SETPOS:
+                        if (ModrinthTheme.Enabled)
+                        {
+                            m.LParam = IntPtr.Zero;
+                            base.WndProc(ref m);
+                            Redraw();
+                            return;
+                        }
+                        break;
+
+                    case NativeMethods.SBM_SETSCROLLINFO:
+                    case NativeMethods.SBM_SETRANGEREDRAW:
+                        if (ModrinthTheme.Enabled)
+                        {
+                            m.WParam = IntPtr.Zero;
+                            base.WndProc(ref m);
+                            Redraw();
+                            return;
+                        }
+                        break;
                 }
                 base.WndProc(ref m);
+            }
+
+            /// <summary>
+            /// Repaint now rather than whenever the queue gets round to it, or
+            /// the thumb lags behind the content while scrolling.
+            /// </summary>
+            private void Redraw()
+            {
+                if (scrollBar.IsHandleCreated)
+                {
+                    scrollBar.Invalidate();
+                    scrollBar.Update();
+                }
             }
 
             private void Paint()
