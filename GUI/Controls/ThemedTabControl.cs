@@ -40,7 +40,11 @@ namespace CKAN.GUI
         /// <summary>
         /// A TabControl draws a raised frame around the page area in system
         /// colors, and offers no property to turn it off, so it gets covered up
-        /// once the control has finished painting. The tab row is left alone.
+        /// once the control has finished painting.
+        ///
+        /// The same goes for the strip beside the tabs: owner drawing only gets
+        /// to paint the tabs themselves, leaving the rest of that row in the
+        /// system's light color.
         /// </summary>
         private void PaintOverFrame()
         {
@@ -62,6 +66,21 @@ namespace CKAN.GUI
                 g.FillRectangle(brush, client.Left, page.Bottom,
                                 client.Width, client.Bottom - page.Bottom);
                 g.FillRectangle(brush, page.Left, top, page.Width, frameWidth);
+
+                // The rest of the tab row, either side of the tabs
+                if (TabCount > 0 && GetTabRect(TabCount - 1) is Rectangle lastTab)
+                {
+                    var firstTab = GetTabRect(0);
+                    g.FillRectangle(brush, client.Left, client.Top,
+                                    Math.Max(0, firstTab.Left - client.Left),
+                                    Math.Max(0, top - client.Top));
+                    g.FillRectangle(brush, lastTab.Right, client.Top,
+                                    Math.Max(0, client.Right - lastTab.Right),
+                                    Math.Max(0, top - client.Top));
+                    // And the sliver above them, where the strip pokes out
+                    g.FillRectangle(brush, client.Left, client.Top,
+                                    client.Width, Math.Max(0, lastTab.Top - client.Top));
+                }
             }
         }
 
