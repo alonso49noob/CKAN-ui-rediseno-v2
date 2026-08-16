@@ -9,14 +9,16 @@ using System.Runtime.Versioning;
 namespace CKAN.GUI
 {
     /// <summary>
-    /// Eases mouse wheel scrolling in a DataGridView.
+    /// Smooths out wheel scrolling in the mod list.
     ///
-    /// By default each wheel notch jumps several rows at once, which on a long
-    /// mod list reads as the content teleporting. This intercepts the wheel and
-    /// walks to the destination over a few frames instead.
+    /// A notch travels at a constant speed until it arrives, rather than
+    /// jumping the whole distance at once or coasting to a stop.
     ///
-    /// The grid can only scroll whole rows -- there's no public way to offset it
-    /// by a partial row -- so this is eased, not pixel-smooth.
+    /// It is still quantised to whole rows, and that is a limit of the control
+    /// rather than a choice: DataGridView scrolls by rows, and its internal
+    /// pixel offset refuses intermediate positions -- writing one and reading it
+    /// straight back returns zero. Genuinely per-pixel motion would mean
+    /// replacing the grid with a custom virtual list.
     /// </summary>
     #if NET5_0_OR_GREATER
     [SupportedOSPlatform("windows")]
@@ -41,13 +43,23 @@ namespace CKAN.GUI
 
         private static readonly HashSet<DataGridView> attached = new HashSet<DataGridView>();
 
-        /// <summary>How many rows one wheel notch travels</summary>
-        private const int rowsPerNotch = 3;
+        /// <summary>
+        /// Rows travelled per wheel notch. One row keeps each step as small as
+        /// the control allows, which is as close to continuous as it gets.
+        /// </summary>
+        private const int rowsPerNotch = 2;
 
-        /// <summary>Fraction of the remaining distance covered per frame</summary>
-        private const float easing = 0.28f;
+        /// <summary>One row per frame, so the speed doesn't taper off</summary>
+        private const int rowsPerFrame = 1;
 
-        private const int frameMs = 15;
+        /// <summary>Roughly 60 per second</summary>
+        private const int frameMs = 16;
+
+        /// <summary>
+        /// Cap on how far a fast spin can queue up, so the list doesn't keep
+        /// travelling long after the wheel has stopped.
+        /// </summary>
+        private const int maxPending = 30;
 
         private sealed class Scroller : IDisposable
         {
@@ -60,12 +72,13 @@ namespace CKAN.GUI
 
             internal void OnMouseWheel(object? sender, MouseEventArgs e)
             {
-                pending += -(e.Delta / 120f) * rowsPerNotch;
                 // Stop the grid from also scrolling this notch itself
                 if (e is HandledMouseEventArgs handled)
                 {
                     handled.Handled = true;
                 }
+                pending += -(e.Delta / 120f) * rowsPerNotch;
+                pending  = Math.Max(-maxPending, Math.Min(maxPending, pending));
                 if (!timer.Enabled)
                 {
                     timer.Start();
@@ -79,10 +92,7 @@ namespace CKAN.GUI
                     Stop();
                     return;
                 }
-                var step = pending * easing;
-                // Always cover at least one row, or a slow tail never arrives
-                var rows = step > 0 ? Math.Max(1,  (int)Math.Ceiling(step))
-                                    : Math.Min(-1, (int)Math.Floor(step));
+                var rows  = Math.Sign(pending) * rowsPerFrame;
                 var moved = Scroll(rows);
                 if (moved == 0)
                 {
@@ -148,9 +158,9 @@ namespace CKAN.GUI
                 timer.Dispose();
             }
 
-            private readonly DataGridView                 grid;
-            private readonly System.Windows.Forms.Timer   timer;
-            private          float                        pending;
+            private readonly DataGridView               grid;
+            private readonly System.Windows.Forms.Timer timer;
+            private          float                      pending;
         }
     }
 }
