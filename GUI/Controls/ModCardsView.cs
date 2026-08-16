@@ -18,6 +18,8 @@ namespace CKAN.GUI
         Install,
         Update,
         Remove,
+        /// <summary>Undo a change that's queued but not applied yet</summary>
+        Cancel,
     }
 
     public enum ModListViewMode
@@ -325,14 +327,32 @@ namespace CKAN.GUI
         }
 
         /// <summary>
-        /// What the button offers: updating takes priority over removing, since
-        /// that's the thing worth doing when a newer version is out. Removal is
-        /// still on the context menu.
+        /// True when the mod is already queued for a change that hasn't been
+        /// applied yet: what the user asked for differs from what's installed.
+        /// </summary>
+        internal static bool IsPending(GUIMod mod)
+            => !Equals(mod.SelectedMod?.version, mod.InstalledMod?.Module.version);
+
+        /// <summary>
+        /// The change already queued, which is what the button reports while it
+        /// waits for Apply.
+        /// </summary>
+        private static ModCardAction PendingAction(GUIMod mod)
+            => !mod.IsInstalled        ? ModCardAction.Install
+             : mod.SelectedMod == null ? ModCardAction.Remove
+                                       : ModCardAction.Update;
+
+        /// <summary>
+        /// What pressing the button does. Anything already queued is undone,
+        /// so a click is always reversible by clicking again. Otherwise
+        /// updating takes priority over removing, since that's the thing worth
+        /// doing when a newer version is out; removal stays on the context menu.
         /// </summary>
         internal static ModCardAction ActionFor(GUIMod mod)
-            => !mod.IsInstalled  ? ModCardAction.Install
-             : mod.HasUpdate     ? ModCardAction.Update
-                                 : ModCardAction.Remove;
+            => IsPending(mod)   ? ModCardAction.Cancel
+             : !mod.IsInstalled ? ModCardAction.Install
+             : mod.HasUpdate    ? ModCardAction.Update
+                                : ModCardAction.Remove;
 
         private void DrawButton(Graphics g, GUIMod mod, Rectangle box)
         {
@@ -349,21 +369,40 @@ namespace CKAN.GUI
                 return;
             }
             var action  = ActionFor(mod);
-            var primary = action != ModCardAction.Remove;
+            var pending = action == ModCardAction.Cancel;
+            var label   = (pending ? PendingAction(mod) : action) switch
+                          {
+                              ModCardAction.Install => Properties.Resources.ChangeTypeInstall,
+                              ModCardAction.Update  => Properties.Resources.ChangeTypeUpdate,
+                              _                     => Properties.Resources.ChangeTypeRemove,
+                          };
             using (var path = Rounded(box, corner))
-            using (var fill = new SolidBrush(primary ? ModrinthTheme.Accent
-                                                     : ModrinthTheme.Raised))
             {
-                g.FillPath(fill, path);
-            }
-            Draw(g, action switch
+                if (pending)
+                {
+                    // Queued: outlined rather than filled, so a change that's
+                    // been asked for reads differently from one on offer, and
+                    // pressing it again takes it back
+                    using (var pen = new Pen(ModrinthTheme.Accent, 2))
                     {
-                        ModCardAction.Install => Properties.Resources.ChangeTypeInstall,
-                        ModCardAction.Update  => Properties.Resources.ChangeTypeUpdate,
-                        _                     => Properties.Resources.ChangeTypeRemove,
-                    },
+                        g.DrawPath(pen, path);
+                    }
+                }
+                else
+                {
+                    using (var fill = new SolidBrush(action == ModCardAction.Remove
+                                                         ? ModrinthTheme.Raised
+                                                         : ModrinthTheme.Accent))
+                    {
+                        g.FillPath(fill, path);
+                    }
+                }
+            }
+            Draw(g, pending ? $"✓ {label}" : label,
                  BoldFont,
-                 primary ? ModrinthTheme.Bg : ModrinthTheme.Text,
+                 pending                      ? ModrinthTheme.Accent
+                 : action == ModCardAction.Remove ? ModrinthTheme.Text
+                                                  : ModrinthTheme.Bg,
                  box, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
 

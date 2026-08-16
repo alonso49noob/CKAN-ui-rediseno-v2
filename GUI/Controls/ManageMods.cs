@@ -1361,6 +1361,8 @@ namespace CKAN.GUI
                                          ?? mod.InstalledMod?.Module
                                          ?? mod.LatestCompatibleMod,
                 ModCardAction.Update  => mod.LatestCompatibleMod,
+                // Undo a queued change by going back to what's actually installed
+                ModCardAction.Cancel  => mod.InstalledMod?.Module,
                 _                     => null,
             };
             if (RowFor(mod) is DataGridViewRow row)
@@ -1379,6 +1381,7 @@ namespace CKAN.GUI
             }
             UpdateChangeSetAndConflicts(
                 currentInstance, RegistryManager.Instance(currentInstance, repoData).registry);
+            // Nothing else repaints this view, so the queued state shows up
             ModCards?.Invalidate();
         }
 
