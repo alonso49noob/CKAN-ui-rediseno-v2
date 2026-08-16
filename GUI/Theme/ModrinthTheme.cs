@@ -350,9 +350,11 @@ namespace CKAN.GUI
                     break;
 
                 case TextBoxBase textBox:
-                    textBox.BackColor   = Field;
-                    textBox.ForeColor   = Text;
-                    textBox.BorderStyle = BorderStyle.FixedSingle;
+                    textBox.BackColor = Field;
+                    textBox.ForeColor = Text;
+                    // Not FixedSingle: WinForms draws that border in a light system
+                    // color we can't change, which shows up as a pale outline
+                    textBox.BorderStyle = BorderStyle.None;
                     UseDarkScrollBars(textBox);
                     break;
 
@@ -365,14 +367,14 @@ namespace CKAN.GUI
                 case ListBox listBox:
                     listBox.BackColor   = Field;
                     listBox.ForeColor   = Text;
-                    listBox.BorderStyle = BorderStyle.FixedSingle;
+                    listBox.BorderStyle = BorderStyle.None;
                     UseDarkScrollBars(listBox);
                     break;
 
                 case ListView listView:
                     listView.BackColor   = Field;
                     listView.ForeColor   = Text;
-                    listView.BorderStyle = BorderStyle.FixedSingle;
+                    listView.BorderStyle = BorderStyle.None;
                     UseDarkScrollBars(listView);
                     break;
 
@@ -380,7 +382,7 @@ namespace CKAN.GUI
                     treeView.BackColor   = Field;
                     treeView.ForeColor   = Text;
                     treeView.LineColor   = Border;
-                    treeView.BorderStyle = BorderStyle.FixedSingle;
+                    treeView.BorderStyle = BorderStyle.None;
                     UseDarkScrollBars(treeView);
                     break;
 
@@ -391,7 +393,7 @@ namespace CKAN.GUI
                 case NumericUpDown numeric:
                     numeric.BackColor   = Field;
                     numeric.ForeColor   = Text;
-                    numeric.BorderStyle = BorderStyle.FixedSingle;
+                    numeric.BorderStyle = BorderStyle.None;
                     break;
 
                 case CheckBox checkBox:
@@ -439,16 +441,30 @@ namespace CKAN.GUI
                 case SplitContainer split:
                     // The splitter itself is the container's background, so this
                     // paints it as a hairline rule between the two panes
-                    split.BackColor       = Border;
+                    split.BackColor        = Border;
+                    split.BorderStyle      = BorderStyle.None;
                     split.Panel1.BackColor = Bg;
                     split.Panel2.BackColor = Bg;
                     break;
 
+                case SplitterPanel splitterPanel:
+                    // A 3D edge here is what puts a pale line either side of the
+                    // splitter; the background contrast already separates the panes
+                    splitterPanel.BorderStyle = BorderStyle.None;
+                    splitterPanel.BackColor   = Bg;
+                    break;
+
+                case Panel panel:
+                    panel.BorderStyle = BorderStyle.None;
+                    panel.BackColor   = Bg;
+                    panel.ForeColor   = Text;
+                    break;
+
                 case ScrollBar scrollBar:
                     // Native dark theming only reaches the non-client scrollbars of
-                    // a scrolling window, not standalone SCROLLBAR controls like the
-                    // ones a DataGridView hosts, so this is a no-op there for now
-                    UseDarkScrollBars(scrollBar);
+                    // a scrolling window, never standalone SCROLLBAR controls like
+                    // the ones a DataGridView hosts, so these get painted by hand
+                    FlatScrollBar.Attach(scrollBar);
                     break;
 
                 case PictureBox:

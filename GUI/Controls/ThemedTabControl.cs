@@ -26,6 +26,48 @@ namespace CKAN.GUI
             }
         }
 
+        private const int WM_PAINT = 0x000F;
+
+        protected override void WndProc(ref Message m)
+        {
+            base.WndProc(ref m);
+            if (m.Msg == WM_PAINT && ModrinthTheme.Enabled)
+            {
+                PaintOverFrame();
+            }
+        }
+
+        /// <summary>
+        /// A TabControl draws a raised frame around the page area in system
+        /// colors, and offers no property to turn it off, so it gets covered up
+        /// once the control has finished painting. The tab row is left alone.
+        /// </summary>
+        private void PaintOverFrame()
+        {
+            var page   = DisplayRectangle;
+            var client = ClientRectangle;
+            if (page.Width <= 0 || page.Height <= 0)
+            {
+                return;
+            }
+            using (var g     = Graphics.FromHwnd(Handle))
+            using (var brush = new SolidBrush(ModrinthTheme.Bg))
+            {
+                // Everything outside the page but below the tab row: the frame
+                var top = page.Top - frameWidth;
+                g.FillRectangle(brush, client.Left, top,
+                                page.Left - client.Left, client.Bottom - top);
+                g.FillRectangle(brush, page.Right, top,
+                                client.Right - page.Right, client.Bottom - top);
+                g.FillRectangle(brush, client.Left, page.Bottom,
+                                client.Width, client.Bottom - page.Bottom);
+                g.FillRectangle(brush, page.Left, top, page.Width, frameWidth);
+            }
+        }
+
+        /// <summary>How far the frame extends beyond the page area</summary>
+        private const int frameWidth = 3;
+
         protected override void OnDrawItem(DrawItemEventArgs e)
         {
             var selected = e.State == DrawItemState.Selected;

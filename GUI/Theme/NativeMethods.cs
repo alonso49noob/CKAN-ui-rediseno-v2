@@ -47,6 +47,57 @@ namespace CKAN.GUI
             }
         }
 
+        #region Scrollbar painting
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct RECT
+        {
+            public int Left, Top, Right, Bottom;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct PAINTSTRUCT
+        {
+            public IntPtr hdc;
+            public bool   fErase;
+            public RECT   rcPaint;
+            public bool   fRestore;
+            public bool   fIncUpdate;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+            public byte[] rgbReserved;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct SCROLLINFO
+        {
+            public uint cbSize;
+            public uint fMask;
+            public int  nMin;
+            public int  nMax;
+            public uint nPage;
+            public int  nPos;
+            public int  nTrackPos;
+        }
+
+        /// <summary>The window is a scrollbar control in its own right</summary>
+        internal const int  SB_CTL  = 2;
+        /// <summary>Fill in every field of SCROLLINFO</summary>
+        internal const uint SIF_ALL = 0x17;
+
+        internal const int WM_PAINT      = 0x000F;
+        internal const int WM_ERASEBKGND = 0x0014;
+
+        [DllImport("user32.dll")]
+        internal static extern bool GetScrollInfo(IntPtr hWnd, int fnBar, ref SCROLLINFO si);
+
+        [DllImport("user32.dll")]
+        internal static extern IntPtr BeginPaint(IntPtr hWnd, ref PAINTSTRUCT ps);
+
+        [DllImport("user32.dll")]
+        internal static extern bool EndPaint(IntPtr hWnd, ref PAINTSTRUCT ps);
+
+        #endregion
+
         internal static void SetPreferredAppMode(int mode)
         {
             try
