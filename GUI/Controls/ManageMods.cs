@@ -34,6 +34,7 @@ namespace CKAN.GUI
             {
                 ModGrid.BorderStyle = BorderStyle.None;
             }
+            ModCardRows.Attach(ModGrid);
             uninstallingStyle = new DataGridViewCellStyle()
             {
                 Font = new Font(ModGrid.Font, FontStyle.Strikeout),
