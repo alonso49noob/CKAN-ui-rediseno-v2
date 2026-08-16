@@ -123,6 +123,92 @@ namespace CKAN.GUI
             }
         }
 
+        #region Presets
+
+        /// <summary>
+        /// Ready-made palettes. Each one sets every color, so switching between
+        /// them can't leave a stray value behind from the previous choice.
+        /// </summary>
+        private static readonly (string Display, Dictionary<string, string> Colors)[] presets =
+        {
+            (Properties.Resources.ThemePresetModrinth, new Dictionary<string, string>()
+            {
+                { "Bg", "#16181C" }, { "Surface", "#26292F" }, { "Field", "#1D2026" },
+                { "Raised", "#2E323A" }, { "RaisedHover", "#3A3F48" }, { "Border", "#3B4048" },
+                { "GridLine", "#282C33" }, { "Text", "#EDEDED" }, { "TextMuted", "#96A2B0" },
+                { "Accent", "#1BD96A" }, { "AccentHover", "#40E385" }, { "AccentDown", "#12B85A" },
+                { "Selection", "#195434" },
+            }),
+            (Properties.Resources.ThemePresetLight, new Dictionary<string, string>()
+            {
+                { "Bg", "#F2F3F5" }, { "Surface", "#FFFFFF" }, { "Field", "#FFFFFF" },
+                { "Raised", "#E7E9ED" }, { "RaisedHover", "#DADDE3" }, { "Border", "#C6CBD4" },
+                { "GridLine", "#E4E6EA" }, { "Text", "#1B1E23" }, { "TextMuted", "#5B6472" },
+                // A darker green than the dark theme's, or it disappears on white
+                { "Accent", "#0FA854" }, { "AccentHover", "#14C063" }, { "AccentDown", "#0B8B44" },
+                { "Selection", "#C6EED8" },
+            }),
+            (Properties.Resources.ThemePresetOrange, new Dictionary<string, string>()
+            {
+                { "Bg", "#1B1B1F" }, { "Surface", "#26262C" }, { "Field", "#202024" },
+                { "Raised", "#2F2F36" }, { "RaisedHover", "#3B3B44" }, { "Border", "#3D3D46" },
+                { "GridLine", "#2A2A31" }, { "Text", "#ECECEC" }, { "TextMuted", "#9B9BA7" },
+                { "Accent", "#F16436" }, { "AccentHover", "#FF7C52" }, { "AccentDown", "#CE4F24" },
+                { "Selection", "#4C2417" },
+            }),
+            (Properties.Resources.ThemePresetNord, new Dictionary<string, string>()
+            {
+                { "Bg", "#2E3440" }, { "Surface", "#3B4252" }, { "Field", "#343B49" },
+                { "Raised", "#434C5E" }, { "RaisedHover", "#4C566A" }, { "Border", "#4C566A" },
+                { "GridLine", "#3B4252" }, { "Text", "#ECEFF4" }, { "TextMuted", "#A7B0C0" },
+                { "Accent", "#88C0D0" }, { "AccentHover", "#A6D4E1" }, { "AccentDown", "#6FA5B6" },
+                { "Selection", "#3C5468" },
+            }),
+            (Properties.Resources.ThemePresetDracula, new Dictionary<string, string>()
+            {
+                { "Bg", "#282A36" }, { "Surface", "#343746" }, { "Field", "#21222C" },
+                { "Raised", "#44475A" }, { "RaisedHover", "#565A70" }, { "Border", "#4A4D61" },
+                { "GridLine", "#2E3040" }, { "Text", "#F8F8F2" }, { "TextMuted", "#A6ABC4" },
+                { "Accent", "#BD93F9" }, { "AccentHover", "#D2B4FF" }, { "AccentDown", "#9B71DC" },
+                { "Selection", "#44355E" },
+            }),
+        };
+
+        public static IEnumerable<string> PresetNames => presets.Select(p => p.Display);
+
+        /// <summary>
+        /// Switch the whole palette to a named preset. Unknown names are
+        /// ignored rather than throwing: a preset is a convenience, and losing
+        /// one shouldn't take the theme with it.
+        /// </summary>
+        public static void ApplyPreset(string display)
+        {
+            if (presets.FirstOrDefault(p => p.Display == display) is { Colors: not null } preset)
+            {
+                foreach (var entry in entries)
+                {
+                    if (preset.Colors.TryGetValue(entry.Name, out var hex)
+                        && TryFromHex(hex, out var color))
+                    {
+                        entry.Set(color);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// The preset the current palette matches exactly, if any, so the editor
+        /// can show which one is in use after hand editing.
+        /// </summary>
+        public static string? CurrentPreset
+            => presets.FirstOrDefault(p => entries.All(
+                          e => p.Colors.TryGetValue(e.Name, out var hex)
+                               && string.Equals(hex, e.Get().ToHex(),
+                                                StringComparison.OrdinalIgnoreCase)))
+                      .Display;
+
+        #endregion
+
         private static string ThemeFilePath
             => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                             "CKAN", "theme.json");
@@ -373,6 +459,7 @@ namespace CKAN.GUI
                     combo.FlatStyle = FlatStyle.Flat;
                     combo.BackColor = Field;
                     combo.ForeColor = Text;
+                    StyleDropDown(combo);
                     break;
 
                 case ListBox listBox:
@@ -488,6 +575,44 @@ namespace CKAN.GUI
                     break;
             }
         }
+
+        /// <summary>
+        /// The list a combo box drops down is drawn by the system, so setting
+        /// BackColor leaves it white on a dark theme. Owner drawing is the only
+        /// way to reach it.
+        /// </summary>
+        private static void StyleDropDown(ComboBox combo)
+        {
+            // Leave alone anything already drawing itself, and subscribe once
+            if (combo.DrawMode != DrawMode.Normal || !ownerDrawnCombos.Add(combo))
+            {
+                return;
+            }
+            combo.DrawMode = DrawMode.OwnerDrawFixed;
+            combo.DrawItem += (sender, e) =>
+            {
+                if (sender is not ComboBox drawn || e.Graphics is not Graphics g)
+                {
+                    return;
+                }
+                var selected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+                using (var background = new SolidBrush(selected ? Selection : Field))
+                {
+                    g.FillRectangle(background, e.Bounds);
+                }
+                if (e.Index >= 0 && e.Index < drawn.Items.Count
+                    && drawn.Items[e.Index]?.ToString() is string text)
+                {
+                    TextRenderer.DrawText(g, text, drawn.Font, e.Bounds, Text,
+                                          TextFormatFlags.Left
+                                          | TextFormatFlags.VerticalCenter
+                                          | TextFormatFlags.NoPrefix);
+                }
+            };
+            combo.Disposed += (_, _) => ownerDrawnCombos.Remove(combo);
+        }
+
+        private static readonly HashSet<ComboBox> ownerDrawnCombos = new HashSet<ComboBox>();
 
         private static void StyleGrid(DataGridView grid)
         {

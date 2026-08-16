@@ -47,6 +47,37 @@ namespace CKAN.GUI
             table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
 
+            table.Controls.Add(new Label()
+            {
+                Text     = Properties.Resources.ThemeColorsPreset,
+                AutoSize = true,
+                Anchor   = AnchorStyles.Left,
+                Margin   = new Padding(3, 9, 12, 3),
+            });
+            presetPicker = new ComboBox()
+            {
+                Anchor        = AnchorStyles.Left | AnchorStyles.Right,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Margin        = new Padding(3, 4, 3, 12),
+            };
+            presetPicker.Items.Add(Properties.Resources.ThemeColorsCustom);
+            foreach (var preset in ModrinthTheme.PresetNames)
+            {
+                presetPicker.Items.Add(preset);
+            }
+            presetPicker.SelectedIndexChanged += (_, _) =>
+            {
+                if (!updatingPicker
+                    && presetPicker.SelectedItem is string chosen
+                    && chosen != Properties.Resources.ThemeColorsCustom)
+                {
+                    ModrinthTheme.ApplyPreset(chosen);
+                    ModrinthTheme.Reapply();
+                    RepaintSwatches();
+                }
+            };
+            table.Controls.Add(presetPicker);
+
             foreach (var name in ModrinthTheme.ColorNames)
             {
                 table.Controls.Add(new Label()
@@ -165,6 +196,15 @@ namespace CKAN.GUI
             {
                 PaintSwatch(name);
             }
+            // Follow the palette rather than the other way round, so editing a
+            // single color after picking a preset shows as Custom
+            if (presetPicker != null)
+            {
+                updatingPicker = true;
+                presetPicker.SelectedItem = ModrinthTheme.CurrentPreset
+                                            ?? Properties.Resources.ThemeColorsCustom;
+                updatingPicker = false;
+            }
         }
 
         private void OnReset()
@@ -217,5 +257,8 @@ namespace CKAN.GUI
 
         private readonly Dictionary<string, Color>  original;
         private readonly Dictionary<string, Button> swatches = new Dictionary<string, Button>();
+        private readonly ComboBox                   presetPicker;
+        /// <summary>Guards against the picker reacting to its own updates</summary>
+        private          bool                       updatingPicker;
     }
 }

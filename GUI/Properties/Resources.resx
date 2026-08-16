@@ -454,6 +454,13 @@ Click Refresh to update!
 Or choose "Update repositories on launch" in the settings.</value></data>
   <data name="TotalPlayTime" xml:space="preserve"><value>Total play time: {0} hours</value></data>
   <data name="ChangeTypeNone" xml:space="preserve"><value>None</value></data>
+  <data name="ThemeColorsPreset" xml:space="preserve"><value>Preset</value></data>
+  <data name="ThemeColorsCustom" xml:space="preserve"><value>Custom</value></data>
+  <data name="ThemePresetModrinth" xml:space="preserve"><value>Modrinth (green)</value></data>
+  <data name="ThemePresetLight" xml:space="preserve"><value>Light</value></data>
+  <data name="ThemePresetOrange" xml:space="preserve"><value>CurseForge (orange)</value></data>
+  <data name="ThemePresetNord" xml:space="preserve"><value>Nord (blue)</value></data>
+  <data name="ThemePresetDracula" xml:space="preserve"><value>Dracula (purple)</value></data>
   <data name="ThemeColorsMenu" xml:space="preserve"><value>Theme colors...</value></data>
   <data name="ThemeColorsTitle" xml:space="preserve"><value>Theme colors</value></data>
   <data name="ThemeColorsOK" xml:space="preserve"><value>OK</value></data>
