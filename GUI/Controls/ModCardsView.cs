@@ -273,12 +273,17 @@ namespace CKAN.GUI
                  new Rectangle(textLeft, y, textWidth, lineHeight),
                  TextFormatFlags.HorizontalCenter);
             y += lineHeight + 4;
-            // Two lines of description, cut off with an ellipsis
+            // As much description as fits above the button, cut with an ellipsis.
+            // Clamped rather than fixed, or a long one runs under the button.
+            var button    = ButtonBounds(bounds);
+            var available = Math.Max(0, button.Top - inner - y);
+            // Whole lines only, so the last one isn't sliced through the middle
+            var lines     = Math.Min(2, available / lineHeight);
             Draw(g, mod.Abstract, Font, ModrinthTheme.TextMuted,
-                 new Rectangle(textLeft, y, textWidth, (2 * lineHeight)),
+                 new Rectangle(textLeft, y, textWidth, lines * lineHeight),
                  TextFormatFlags.WordBreak);
 
-            DrawButton(g, mod, ButtonBounds(bounds));
+            DrawButton(g, mod, button);
         }
 
         /// <summary>

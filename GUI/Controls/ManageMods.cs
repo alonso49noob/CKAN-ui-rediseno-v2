@@ -1275,10 +1275,25 @@ namespace CKAN.GUI
             }
             Toolbar.Items.Add(ViewModeMenu);
 
-            ViewMode = guiConfig?.ModListViewMode is int saved
-                       && Enum.IsDefined(typeof(ModListViewMode), saved)
-                           ? (ModListViewMode)saved
-                           : ModListViewMode.ExpandedList;
+            ViewMode = ModListViewMode.ExpandedList;
+
+            // The configuration hangs off Main.Instance, which doesn't exist yet
+            // while this control is being built -- not even by the time Load
+            // fires, since that happens inside Main's own constructor. Rather
+            // than depend on the order of startup, wait for it to turn up.
+            var applySaved = new Timer() { Interval = 300 };
+            applySaved.Tick += (_, _) =>
+            {
+                if (guiConfig is GUIConfiguration config)
+                {
+                    applySaved.Stop();
+                    applySaved.Dispose();
+                    ViewMode = Enum.IsDefined(typeof(ModListViewMode), config.ModListViewMode)
+                                   ? (ModListViewMode)config.ModListViewMode
+                                   : ModListViewMode.ExpandedList;
+                }
+            };
+            applySaved.Start();
         }
 
         private ModListViewMode viewMode = ModListViewMode.ExpandedList;
