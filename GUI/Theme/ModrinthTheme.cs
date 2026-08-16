@@ -207,9 +207,20 @@ namespace CKAN.GUI
         /// Style a control and everything inside it.
         /// Safe to call more than once on the same control.
         /// </summary>
+        /// <summary>
+        /// Put this in a control's Tag to keep the theme's hands off it. Needed
+        /// by anything whose colors are its content -- a color swatch being the
+        /// obvious case, since restyling it would erase what it's showing.
+        /// </summary>
+        public const string SkipTag = "ckan-theme-skip";
+
         public static void Apply(Control control)
         {
             if (!Enabled)
+            {
+                return;
+            }
+            if (control.Tag as string == SkipTag)
             {
                 return;
             }

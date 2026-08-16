@@ -98,6 +98,23 @@ namespace CKAN.GUI
 
         #region Settings menu
 
+        /// <summary>
+        /// Adds the palette editor to the Settings menu. Done in code because
+        /// the whole theme lives outside the designer.
+        /// </summary>
+        private void AddThemeColorsMenuItem()
+        {
+            var item = new ToolStripMenuItem(Properties.Resources.ThemeColorsMenu);
+            item.Click += (_, _) =>
+            {
+                using (var dialog = new ThemeColorsDialog())
+                {
+                    dialog.ShowDialog(this);
+                }
+            };
+            settingsToolStripMenuItem.DropDownItems.Add(item);
+        }
+
         private void CKANSettingsToolStripMenuItem_Click(object? sender, EventArgs? e)
         {
             if (CurrentInstance != null && configuration != null)

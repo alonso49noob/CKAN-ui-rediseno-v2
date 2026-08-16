@@ -114,6 +114,7 @@ namespace CKAN.GUI
             Application.AddMessageFilter(this);
 
             InitializeComponent();
+            AddThemeColorsMenuItem();
             MainMenu.ScaleFonts();
             StatusLabel.ScaleFonts();
             StatusInstanceLabel.ScaleFonts();

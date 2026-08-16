@@ -454,6 +454,24 @@ Click Refresh to update!
 Or choose "Update repositories on launch" in the settings.</value></data>
   <data name="TotalPlayTime" xml:space="preserve"><value>Total play time: {0} hours</value></data>
   <data name="ChangeTypeNone" xml:space="preserve"><value>None</value></data>
+  <data name="ThemeColorsMenu" xml:space="preserve"><value>Theme colors...</value></data>
+  <data name="ThemeColorsTitle" xml:space="preserve"><value>Theme colors</value></data>
+  <data name="ThemeColorsOK" xml:space="preserve"><value>OK</value></data>
+  <data name="ThemeColorsCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="ThemeColorsReset" xml:space="preserve"><value>Reset to defaults</value></data>
+  <data name="ThemeColorBg" xml:space="preserve"><value>Window background</value></data>
+  <data name="ThemeColorSurface" xml:space="preserve"><value>Cards and panels</value></data>
+  <data name="ThemeColorField" xml:space="preserve"><value>Text boxes and lists</value></data>
+  <data name="ThemeColorRaised" xml:space="preserve"><value>Buttons</value></data>
+  <data name="ThemeColorRaisedHover" xml:space="preserve"><value>Buttons, hovered</value></data>
+  <data name="ThemeColorBorder" xml:space="preserve"><value>Borders</value></data>
+  <data name="ThemeColorGridLine" xml:space="preserve"><value>List separators</value></data>
+  <data name="ThemeColorText" xml:space="preserve"><value>Text</value></data>
+  <data name="ThemeColorTextMuted" xml:space="preserve"><value>Secondary text</value></data>
+  <data name="ThemeColorAccent" xml:space="preserve"><value>Accent</value></data>
+  <data name="ThemeColorAccentHover" xml:space="preserve"><value>Accent, hovered</value></data>
+  <data name="ThemeColorAccentDown" xml:space="preserve"><value>Accent, pressed</value></data>
+  <data name="ThemeColorSelection" xml:space="preserve"><value>Selected rows</value></data>
   <data name="ManageModsViewMode" xml:space="preserve"><value>View</value></data>
   <data name="ManageModsViewExpanded" xml:space="preserve"><value>Expanded list</value></data>
   <data name="ManageModsViewCards" xml:space="preserve"><value>Cards</value></data>
