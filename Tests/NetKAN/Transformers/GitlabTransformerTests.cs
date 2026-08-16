@@ -39,7 +39,7 @@ namespace Tests.NetKAN.Transformers
                 .Returns((Uri u, string? token, string? mimeType) => $@"[
                                         {{
                                             ""tag_name"":    ""v1.0.0"",
-                                            ""released_at"": ""{DateTime.UtcNow}"",
+                                            ""released_at"": ""{DateTime.UtcNow:O}"",
                                             ""author"": {{
                                                 ""name"": ""A Modder""
                                             }},
