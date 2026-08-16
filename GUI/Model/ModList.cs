@@ -149,10 +149,10 @@ namespace CKAN.GUI
 
             item.DefaultCellStyle.BackColor = GetRowBackground(mod, false, instance);
             item.DefaultCellStyle.ForeColor = item.DefaultCellStyle.BackColor.ForeColorForBackColor()
-                                              ?? SystemColors.WindowText;
+                                              ?? RowForeColor;
             item.DefaultCellStyle.SelectionBackColor = SelectionBlend(item.DefaultCellStyle.BackColor);
             item.DefaultCellStyle.SelectionForeColor = item.DefaultCellStyle.SelectionBackColor.ForeColorForBackColor()
-                                                       ?? SystemColors.HighlightText;
+                                                       ?? RowSelectionForeColor;
 
             var myChange = changes?.FindLast(ch => ch.Mod.Equals(mod));
 
@@ -363,10 +363,10 @@ namespace CKAN.GUI
             {
                 row.DefaultCellStyle.BackColor = GetRowBackground(mod, conflicted, instance);
                 row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.BackColor.ForeColorForBackColor()
-                                                 ?? SystemColors.WindowText;
+                                                 ?? RowForeColor;
                 row.DefaultCellStyle.SelectionBackColor = SelectionBlend(row.DefaultCellStyle.BackColor);
                 row.DefaultCellStyle.SelectionForeColor = row.DefaultCellStyle.SelectionBackColor.ForeColorForBackColor()
-                                                          ?? SystemColors.HighlightText;
+                                                          ?? RowSelectionForeColor;
                 row.Visible = IsVisible(mod, instance, registry);
                 return row;
             }
@@ -688,8 +688,26 @@ namespace CKAN.GUI
 
         private static Color SelectionBlend(Color c)
             => c == Color.Empty
-                ? SystemColors.Highlight
-                : SystemColors.Highlight.AlphaBlendWith(selectionAlpha, c);
+                ? SelectionBase
+                : SelectionBase.AlphaBlendWith(selectionAlpha, c);
+
+        /// <summary>
+        /// Highlight color for selected rows: the theme's when it's on, so a
+        /// selected mod doesn't light up in the system blue on a dark list.
+        /// </summary>
+        private static Color SelectionBase => ModrinthTheme.Enabled
+                                                  ? ModrinthTheme.Selection
+                                                  : SystemColors.Highlight;
+
+        /// <summary>Text color for rows that have no label color of their own</summary>
+        private static Color RowForeColor => ModrinthTheme.Enabled
+                                                 ? ModrinthTheme.Text
+                                                 : SystemColors.WindowText;
+
+        /// <summary>Text color for the selected row</summary>
+        private static Color RowSelectionForeColor => ModrinthTheme.Enabled
+                                                          ? ModrinthTheme.Text
+                                                          : SystemColors.HighlightText;
 
         private const float selectionAlpha = 0.4f;
 

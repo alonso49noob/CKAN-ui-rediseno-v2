@@ -17,8 +17,9 @@ namespace CKAN.GUI
     {
         public ThemedTabControl() : base()
         {
-            // We need default rendering for dark mode
-            if (!Util.DarkMode)
+            // We need default rendering for dark mode, unless our own palette is
+            // in charge, in which case default rendering would ignore it
+            if (ModrinthTheme.Enabled || !Util.DarkMode)
             {
                 // Tell the base class that we want to draw things ourselves
                 DrawMode = TabDrawMode.OwnerDrawFixed;
@@ -27,13 +28,27 @@ namespace CKAN.GUI
 
         protected override void OnDrawItem(DrawItemEventArgs e)
         {
+            var selected = e.State == DrawItemState.Selected;
             // Background
             Rectangle bgRect = e.Bounds;
             bgRect.Inflate(-2, -1);
             bgRect.Offset(0, 1);
-            using (SolidBrush bgBrush = new SolidBrush(BackColor))
+            using (SolidBrush bgBrush = new SolidBrush(
+                       ModrinthTheme.Enabled
+                           ? selected ? ModrinthTheme.Surface : ModrinthTheme.Bg
+                           : BackColor))
             {
                 e.Graphics.FillRectangle(bgBrush, bgRect);
+            }
+            if (ModrinthTheme.Enabled && selected)
+            {
+                // Accent rule under the active tab, the way web UIs mark them
+                using (var accentBrush = new SolidBrush(ModrinthTheme.Accent))
+                {
+                    e.Graphics.FillRectangle(accentBrush,
+                                             new Rectangle(bgRect.Left, bgRect.Bottom - 2,
+                                                           bgRect.Width, 2));
+                }
             }
             // e.Index can be invalid (!!), so we need try/catch
             try
@@ -63,7 +78,10 @@ namespace CKAN.GUI
 
                 // Text
                 TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font,
-                                      textRect, tabPage.ForeColor);
+                                      textRect,
+                                      ModrinthTheme.Enabled
+                                          ? selected ? ModrinthTheme.Text : ModrinthTheme.TextMuted
+                                          : tabPage.ForeColor);
             }
             catch (ArgumentOutOfRangeException)
             {

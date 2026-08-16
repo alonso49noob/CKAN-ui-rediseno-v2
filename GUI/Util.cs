@@ -360,7 +360,9 @@ namespace CKAN.GUI
         private static readonly ConcurrentDictionary<Color, Color> foreColorCache = new ConcurrentDictionary<Color, Color>();
 
         public static Color LinkColorForBackColor(this Color backColor)
-            => backColor == Color.Transparent || backColor == Color.Empty ? Color.Blue
+            // One place to make every dynamically created link use the accent color
+            => ModrinthTheme.Enabled ? ModrinthTheme.Accent
+             : backColor == Color.Transparent || backColor == Color.Empty ? Color.Blue
              : linkColorCache.GetOrAdd(backColor, c => c.IsLight()
                                                            ? Color.Blue
                                                            : BlendColors(Color.Blue, Color.White));
@@ -476,7 +478,14 @@ namespace CKAN.GUI
         #endregion
 
         #pragma warning disable IDE0075
-        public static bool DarkMode => Platform.IsWindows
+        /// <summary>
+        /// True when the app should render for a dark background. Our own palette
+        /// wins when it's enabled, so the existing dark-aware code (icon inversion,
+        /// tab drawing) follows the theme instead of the Windows setting.
+        /// </summary>
+        public static bool DarkMode => ModrinthTheme.IsDark || SystemDarkMode;
+
+        private static bool SystemDarkMode => Platform.IsWindows
                                            #if NET10_0_OR_GREATER
                                            ? Platform.IsWindows11
                                              && WinReg.GetValue(DarkModeKey, "AppsUseLightTheme", 1) is not 1

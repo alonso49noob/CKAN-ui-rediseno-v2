@@ -61,13 +61,22 @@ namespace CKAN.GUI
             }
             else
             {
+                // Load the palette before any window exists, so the first paint
+                // is already themed and nothing flashes white on startup
+                ModrinthTheme.Load();
+                ModrinthTheme.Hook();
                 #if NET10_0_OR_GREATER
                 if (Platform.IsWindows && Util.DarkMode)
                 {
-                    Application.SetColorMode(SystemColorMode.System);
+                    // Force dark for the natively drawn bits (scrollbars, drop-downs)
+                    // when our own palette is dark, regardless of the system setting
+                    Application.SetColorMode(ModrinthTheme.IsDark
+                                                 ? SystemColorMode.Dark
+                                                 : SystemColorMode.System);
                 }
                 #endif
                 var main = new Main(args, manager, userAgent);
+                ModrinthTheme.Apply(main);
                 if (Platform.IsWindows && Util.DarkMode)
                 {
                     int val = 1;

@@ -1243,8 +1243,12 @@ namespace CKAN.GUI
             Util.Invoke(this, () =>
             {
                 // Give the selected row the standard highlight color
-                ModGrid.RowsDefaultCellStyle.SelectionBackColor = SystemColors.Highlight;
-                ModGrid.RowsDefaultCellStyle.SelectionForeColor = SystemColors.HighlightText;
+                ModGrid.RowsDefaultCellStyle.SelectionBackColor = ModrinthTheme.Enabled
+                                                                      ? ModrinthTheme.Selection
+                                                                      : SystemColors.Highlight;
+                ModGrid.RowsDefaultCellStyle.SelectionForeColor = ModrinthTheme.Enabled
+                                                                      ? ModrinthTheme.Text
+                                                                      : SystemColors.HighlightText;
             });
         }
 
@@ -1253,8 +1257,12 @@ namespace CKAN.GUI
             Util.Invoke(this, () =>
             {
                 // Gray out the selected row so you can tell the mod list is not focused
-                ModGrid.RowsDefaultCellStyle.SelectionBackColor = SystemColors.Control;
-                ModGrid.RowsDefaultCellStyle.SelectionForeColor = SystemColors.ControlText;
+                ModGrid.RowsDefaultCellStyle.SelectionBackColor = ModrinthTheme.Enabled
+                                                                      ? ModrinthTheme.Raised
+                                                                      : SystemColors.Control;
+                ModGrid.RowsDefaultCellStyle.SelectionForeColor = ModrinthTheme.Enabled
+                                                                      ? ModrinthTheme.TextMuted
+                                                                      : SystemColors.ControlText;
             });
         }
 
