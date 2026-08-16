@@ -12,6 +12,14 @@ using System.Runtime.Versioning;
 
 namespace CKAN.GUI
 {
+    /// <summary>What a card's button does, which depends on the mod's state</summary>
+    public enum ModCardAction
+    {
+        Install,
+        Update,
+        Remove,
+    }
+
     public enum ModListViewMode
     {
         /// <summary>Full width rows running down the window, like CurseForge</summary>
@@ -115,8 +123,8 @@ namespace CKAN.GUI
         /// <summary>A mod was clicked, and should become the current selection</summary>
         public event Action<GUIMod>? ModClicked;
 
-        /// <summary>A mod was double clicked or its button pressed</summary>
-        public event Action<GUIMod>? InstallToggled;
+        /// <summary>A mod's button was pressed, or it was double clicked</summary>
+        public event Action<GUIMod, ModCardAction>? ActionRequested;
 
         /// <summary>The user right clicked, and wants the mod list's own menu</summary>
         public event Action? ContextMenuRequested;
@@ -316,6 +324,16 @@ namespace CKAN.GUI
             }
         }
 
+        /// <summary>
+        /// What the button offers: updating takes priority over removing, since
+        /// that's the thing worth doing when a newer version is out. Removal is
+        /// still on the context menu.
+        /// </summary>
+        internal static ModCardAction ActionFor(GUIMod mod)
+            => !mod.IsInstalled  ? ModCardAction.Install
+             : mod.HasUpdate     ? ModCardAction.Update
+                                 : ModCardAction.Remove;
+
         private void DrawButton(Graphics g, GUIMod mod, Rectangle box)
         {
             if (mod.IsAutodetected || box.Width <= 0)
@@ -323,24 +341,29 @@ namespace CKAN.GUI
                 // Manually installed mods aren't ours to add or remove
                 return;
             }
-            var installed = mod.IsInstalled;
-            if (!installed && !mod.IsInstallable())
+            if (!mod.IsInstalled && !mod.IsInstallable())
             {
                 Draw(g, Properties.Resources.MainModListIncompatible, Font,
                      ModrinthTheme.TextMuted, box,
                      TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
                 return;
             }
+            var action  = ActionFor(mod);
+            var primary = action != ModCardAction.Remove;
             using (var path = Rounded(box, corner))
-            using (var fill = new SolidBrush(installed ? ModrinthTheme.Raised
-                                                       : ModrinthTheme.Accent))
+            using (var fill = new SolidBrush(primary ? ModrinthTheme.Accent
+                                                     : ModrinthTheme.Raised))
             {
                 g.FillPath(fill, path);
             }
-            Draw(g, installed ? Properties.Resources.ChangeTypeRemove
-                              : Properties.Resources.ChangeTypeInstall,
+            Draw(g, action switch
+                    {
+                        ModCardAction.Install => Properties.Resources.ChangeTypeInstall,
+                        ModCardAction.Update  => Properties.Resources.ChangeTypeUpdate,
+                        _                     => Properties.Resources.ChangeTypeRemove,
+                    },
                  BoldFont,
-                 installed ? ModrinthTheme.Text : ModrinthTheme.Bg,
+                 primary ? ModrinthTheme.Bg : ModrinthTheme.Text,
                  box, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
 
@@ -355,8 +378,13 @@ namespace CKAN.GUI
 
         private string MetaLine(GUIMod mod)
         {
-            var version = mod.IsInstalled ? mod.InstalledVersion ?? mod.LatestVersion
-                                          : mod.LatestVersion;
+            // Show both versions when there's an update, so the card says what
+            // pressing Update would actually get you
+            var version = mod.IsInstalled
+                              ? mod.HasUpdate && mod.InstalledVersion != null
+                                    ? $"{mod.InstalledVersion} → {mod.LatestVersion}"
+                                    : mod.InstalledVersion ?? mod.LatestVersion
+                              : mod.LatestVersion;
             var authors = string.Join(", ", mod.Authors);
             var parts   = new List<string>();
             if (!string.IsNullOrEmpty(version))
@@ -428,9 +456,11 @@ namespace CKAN.GUI
                 return;
             }
             ModClicked?.Invoke(mod);
-            if (!mod.IsAutodetected && ButtonBounds(bounds).Contains(e.Location))
+            if (!mod.IsAutodetected
+                && (mod.IsInstalled || mod.IsInstallable())
+                && ButtonBounds(bounds).Contains(e.Location))
             {
-                InstallToggled?.Invoke(mod);
+                ActionRequested?.Invoke(mod, ActionFor(mod));
             }
             Invalidate();
         }
@@ -440,9 +470,10 @@ namespace CKAN.GUI
             base.OnMouseDoubleClick(e);
             if (e.Button == MouseButtons.Left
                 && HitTest(e.Location) is (GUIMod mod, Rectangle _)
-                && !mod.IsAutodetected)
+                && !mod.IsAutodetected
+                && (mod.IsInstalled || mod.IsInstallable()))
             {
-                InstallToggled?.Invoke(mod);
+                ActionRequested?.Invoke(mod, ActionFor(mod));
                 Invalidate();
             }
         }

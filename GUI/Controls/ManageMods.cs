@@ -1258,7 +1258,7 @@ namespace CKAN.GUI
             };
             Controls.Add(ModCards);
             ModCards.ModClicked           += SelectModFromCards;
-            ModCards.InstallToggled       += ToggleInstallFromCards;
+            ModCards.ActionRequested      += ActFromCards;
             ModCards.ContextMenuRequested += () => ShowModContextMenu();
 
             ViewModeMenu = new ToolStripMenuItem(Properties.Resources.ManageModsViewMode);
@@ -1345,24 +1345,37 @@ namespace CKAN.GUI
         }
 
         /// <summary>
-        /// Mark a mod for install or removal, the same way ticking the Installed
-        /// checkbox does, so the change set and conflicts stay consistent.
+        /// Mark a mod for install, upgrade or removal, exactly as ticking the
+        /// matching checkbox does, so the change set and conflicts stay
+        /// consistent however the user asked for it.
         /// </summary>
-        private void ToggleInstallFromCards(GUIMod mod)
+        private void ActFromCards(GUIMod mod, ModCardAction action)
         {
             if (mod.IsAutodetected || currentInstance == null)
             {
                 return;
             }
-            var install = mod.SelectedMod == null;
-            mod.SelectedMod = install
-                                  ? mod.SelectedMod
-                                    ?? mod.InstalledMod?.Module
-                                    ?? mod.LatestCompatibleMod
-                                  : null;
-            if (RowFor(mod)?.Cells[Installed.Index] is DataGridViewCheckBoxCell cell)
+            mod.SelectedMod = action switch
             {
-                cell.Value = mod.SelectedMod != null;
+                ModCardAction.Install => mod.SelectedMod
+                                         ?? mod.InstalledMod?.Module
+                                         ?? mod.LatestCompatibleMod,
+                ModCardAction.Update  => mod.LatestCompatibleMod,
+                _                     => null,
+            };
+            if (RowFor(mod) is DataGridViewRow row)
+            {
+                if (row.Cells[Installed.Index] is DataGridViewCheckBoxCell installedCell)
+                {
+                    installedCell.Value = mod.SelectedMod != null;
+                }
+                // Keep the update checkbox honest too, or the classic list would
+                // disagree with the card about what's about to happen
+                if (row.Cells[UpdateCol.Index] is DataGridViewCheckBoxCell updateCell
+                    && updateCell.Value is not null)
+                {
+                    updateCell.Value = action == ModCardAction.Update;
+                }
             }
             UpdateChangeSetAndConflicts(
                 currentInstance, RegistryManager.Instance(currentInstance, repoData).registry);
