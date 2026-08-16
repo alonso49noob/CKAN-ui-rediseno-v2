@@ -59,6 +59,7 @@ namespace CKAN.GUI
 
         protected override void OnPaint(PaintEventArgs e)
         {
+            var filledRect = Rectangle.Empty;
             if (ProgressBarRenderer.IsSupported
                 // ProgressBarRenderer draws the wrong background color in net10's dark mode
                 && !Util.DarkMode)
@@ -77,19 +78,45 @@ namespace CKAN.GUI
                 var innerRect = Rectangle.Inflate(ClientRectangle, -2 * borderWidth,
                                                                    -2 * borderWidth);
                 innerRect.Offset(borderWidth, borderWidth);
-                e.Graphics.DrawRectangle(SystemPens.ControlDark, ClientRectangle);
-                e.Graphics.FillRectangle(SystemBrushes.Control, innerRect);
-                e.Graphics.FillRectangle(SystemBrushes.Highlight,
-                                         new Rectangle(innerRect.X,
-                                                       innerRect.Y,
-                                                       innerRect.Width * (Value   - Minimum)
-                                                                       / (Maximum - Minimum),
-                                                       innerRect.Height));
+                filledRect = new Rectangle(innerRect.X,
+                                           innerRect.Y,
+                                           innerRect.Width * (Value   - Minimum)
+                                                           / (Maximum - Minimum),
+                                           innerRect.Height);
+                if (ModrinthTheme.Enabled)
+                {
+                    using (var borderPen  = new Pen(ModrinthTheme.Border))
+                    using (var trackBrush = new SolidBrush(ModrinthTheme.Field))
+                    using (var fillBrush  = new SolidBrush(ModrinthTheme.Accent))
+                    {
+                        e.Graphics.DrawRectangle(borderPen, ClientRectangle);
+                        e.Graphics.FillRectangle(trackBrush, innerRect);
+                        e.Graphics.FillRectangle(fillBrush, filledRect);
+                    }
+                }
+                else
+                {
+                    e.Graphics.DrawRectangle(SystemPens.ControlDark, ClientRectangle);
+                    e.Graphics.FillRectangle(SystemBrushes.Control, innerRect);
+                    e.Graphics.FillRectangle(SystemBrushes.Highlight, filledRect);
+                }
             }
-            TextRenderer.DrawText(e.Graphics, Text, Font,
-                                  new Point((Width  - textSize.Width)  / 2,
-                                            (Height - textSize.Height) / 2),
-                                  SystemColors.ControlText);
+            var textPoint = new Point((Width  - textSize.Width)  / 2,
+                                      (Height - textSize.Height) / 2);
+            if (ModrinthTheme.Enabled)
+            {
+                // The label crosses from the filled part to the empty part, so
+                // draw it twice: dark where it sits on the accent, light elsewhere
+                TextRenderer.DrawText(e.Graphics, Text, Font, textPoint, ModrinthTheme.Text);
+                var saved = e.Graphics.Clip;
+                e.Graphics.SetClip(filledRect);
+                TextRenderer.DrawText(e.Graphics, Text, Font, textPoint, ModrinthTheme.Bg);
+                e.Graphics.Clip = saved;
+            }
+            else
+            {
+                TextRenderer.DrawText(e.Graphics, Text, Font, textPoint, SystemColors.ControlText);
+            }
         }
 
         private Size textSize;

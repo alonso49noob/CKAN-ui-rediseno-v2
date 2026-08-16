@@ -244,6 +244,12 @@ namespace CKAN.GUI
             {
                 return;
             }
+            if (Platform.IsWindows && IsDark)
+            {
+                // Has to happen before any window exists, or per-window dark mode
+                // is refused and the scrollbars come up light
+                NativeMethods.SetPreferredAppMode(NativeMethods.PreferredAppModeAllowDark);
+            }
             Application.Idle += StyleNewForms;
         }
 
@@ -261,6 +267,34 @@ namespace CKAN.GUI
                 }
             }
         }
+
+        /// <summary>
+        /// Ask the OS to draw this control's scrollbars dark. Has to wait for the
+        /// handle, and has to be re-sent on recreation or the light ones come back.
+        /// </summary>
+        private static void UseDarkScrollBars(Control control)
+        {
+            if (!Platform.IsWindows || !IsDark)
+            {
+                return;
+            }
+            if (control.IsHandleCreated)
+            {
+                ApplyDarkWindowTheme(control.Handle);
+            }
+            if (darkScrollBarHooked.Add(control))
+            {
+                control.HandleCreated += (_, _) => ApplyDarkWindowTheme(control.Handle);
+            }
+        }
+
+        private static void ApplyDarkWindowTheme(IntPtr handle)
+        {
+            NativeMethods.AllowDarkModeForWindow(handle);
+            NativeMethods.SetWindowTheme(handle, "DarkMode_Explorer", null);
+        }
+
+        private static readonly HashSet<Control> darkScrollBarHooked = new HashSet<Control>();
 
         /// <summary>
         /// Ask the desktop window manager for a dark title bar, so the frame
@@ -319,6 +353,7 @@ namespace CKAN.GUI
                     textBox.BackColor   = Field;
                     textBox.ForeColor   = Text;
                     textBox.BorderStyle = BorderStyle.FixedSingle;
+                    UseDarkScrollBars(textBox);
                     break;
 
                 case ComboBox combo:
@@ -331,12 +366,14 @@ namespace CKAN.GUI
                     listBox.BackColor   = Field;
                     listBox.ForeColor   = Text;
                     listBox.BorderStyle = BorderStyle.FixedSingle;
+                    UseDarkScrollBars(listBox);
                     break;
 
                 case ListView listView:
                     listView.BackColor   = Field;
                     listView.ForeColor   = Text;
                     listView.BorderStyle = BorderStyle.FixedSingle;
+                    UseDarkScrollBars(listView);
                     break;
 
                 case TreeView treeView:
@@ -344,6 +381,7 @@ namespace CKAN.GUI
                     treeView.ForeColor   = Text;
                     treeView.LineColor   = Border;
                     treeView.BorderStyle = BorderStyle.FixedSingle;
+                    UseDarkScrollBars(treeView);
                     break;
 
                 case DataGridView grid:
@@ -406,6 +444,13 @@ namespace CKAN.GUI
                     split.Panel2.BackColor = Bg;
                     break;
 
+                case ScrollBar scrollBar:
+                    // Native dark theming only reaches the non-client scrollbars of
+                    // a scrolling window, not standalone SCROLLBAR controls like the
+                    // ones a DataGridView hosts, so this is a no-op there for now
+                    UseDarkScrollBars(scrollBar);
+                    break;
+
                 case PictureBox:
                     // Whatever the image is, don't paint behind it
                     break;
@@ -443,6 +488,9 @@ namespace CKAN.GUI
             grid.RowsDefaultCellStyle.ForeColor          = Text;
             grid.RowsDefaultCellStyle.SelectionBackColor = Selection;
             grid.RowsDefaultCellStyle.SelectionForeColor = Text;
+
+            UseDarkScrollBars(grid);
+            SmoothScroll.Attach(grid);
         }
 
         private static void StyleToolStrip(ToolStrip toolStrip)

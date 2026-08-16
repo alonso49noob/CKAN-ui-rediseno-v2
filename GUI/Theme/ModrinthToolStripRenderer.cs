@@ -1,4 +1,6 @@
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Windows.Forms;
 using System.Diagnostics.CodeAnalysis;
 #if NET5_0_OR_GREATER
@@ -24,12 +26,78 @@ namespace CKAN.GUI
             RoundedEdges = false;
         }
 
+        /// <summary>
+        /// Toolbar entries that get the filled accent treatment, the way a web UI
+        /// marks its one primary action. Matched by name because the toolbar is
+        /// built by the designer, which has nowhere to hang a flag.
+        /// </summary>
+        private static readonly string[] primaryItemNames =
+        {
+            "LaunchGameToolStripMenuItem",
+        };
+
+        private static bool IsPrimary(ToolStripItem item)
+            => !item.IsOnDropDown && primaryItemNames.Contains(item.Name);
+
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
-            e.TextColor = e.Item is { Enabled: true }
-                              ? ModrinthTheme.Text
-                              : ModrinthTheme.TextMuted;
+            e.TextColor = !e.Item.Enabled       ? ModrinthTheme.TextMuted
+                        : IsPrimary(e.Item)     ? ModrinthTheme.Bg
+                                                : ModrinthTheme.Text;
             base.OnRenderItemText(e);
+        }
+
+        protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+        {
+            if (e.Item.IsOnDropDown)
+            {
+                base.OnRenderMenuItemBackground(e);
+                return;
+            }
+
+            // Inset so adjacent items don't touch, and so the pill reads as a button
+            var bounds = new Rectangle(Point.Empty, e.Item.Size);
+            bounds.Inflate(-2, -4);
+
+            var fill = IsPrimary(e.Item)
+                           ? e.Item.Pressed  ? ModrinthTheme.AccentDown
+                           : e.Item.Selected ? ModrinthTheme.AccentHover
+                                             : ModrinthTheme.Accent
+                           : e.Item.Pressed  ? ModrinthTheme.Raised
+                           : e.Item.Selected ? ModrinthTheme.RaisedHover
+                                             : Color.Empty;
+
+            if (fill == Color.Empty)
+            {
+                return;
+            }
+
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var path = RoundedRect(bounds, cornerRadius))
+            using (var brush = new SolidBrush(fill))
+            {
+                e.Graphics.FillPath(brush, path);
+            }
+            e.Graphics.SmoothingMode = SmoothingMode.Default;
+        }
+
+        private const int cornerRadius = 6;
+
+        private static GraphicsPath RoundedRect(Rectangle r, int radius)
+        {
+            var d    = radius * 2;
+            var path = new GraphicsPath();
+            if (d > r.Width || d > r.Height || d <= 0)
+            {
+                path.AddRectangle(r);
+                return path;
+            }
+            path.AddArc(r.Left,        r.Top,           d, d, 180, 90);
+            path.AddArc(r.Right  - d,  r.Top,           d, d, 270, 90);
+            path.AddArc(r.Right  - d,  r.Bottom - d,    d, d,   0, 90);
+            path.AddArc(r.Left,        r.Bottom - d,    d, d,  90, 90);
+            path.CloseFigure();
+            return path;
         }
 
         protected override void OnRenderArrow(ToolStripArrowRenderEventArgs e)
